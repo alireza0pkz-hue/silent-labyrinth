@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>پنل ادمین - SILENT LABYRINTH</title>
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <div class="page-bg"></div>
+
+  <div class="container">
+    <div class="topbar">
+      <div>
+        <div class="brand">SILENT LABYRINTH</div>
+        <div class="muted">پنل مدیریت مشتری‌ها</div>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>افزودن مشتری جدید</h2>
+        <p class="muted">اطلاعات را وارد کن و روی دکمه ثبت بزن.</p>
+
+        <form id="createForm" class="form-grid">
+          <div class="field">
+            <label>نام مشتری</label>
+            <input type="text" id="name" placeholder="مثلاً علی" required />
+          </div>
+
+          <div class="field">
+            <label>حجم کل (GB)</label>
+            <input type="number" id="total_gb" placeholder="مثلاً 100" required />
+          </div>
+
+          <div class="field">
+            <label>حجم مصرف‌شده (GB)</label>
+            <input type="number" id="used_gb" placeholder="مثلاً 35" required />
+          </div>
+
+          <div class="field">
+            <label>تاریخ انقضا</label>
+            <input type="text" id="expire_date" placeholder="مثلاً 1405/03/20" />
+          </div>
+
+          <div class="field">
+            <label>وضعیت</label>
+            <select id="status">
+              <option value="active">فعال</option>
+              <option value="inactive">غیرفعال</option>
+            </select>
+          </div>
+
+          <div class="field field-full">
+            <label>یادداشت</label>
+            <textarea id="note" placeholder="هر توضیحی خواستی"></textarea>
+          </div>
+
+          <div class="field field-full">
+            <button type="submit" class="btn btn-primary full">ثبت مشتری جدید</button>
+          </div>
+        </form>
+      </div>
+
+      <div class="panel">
+        <div class="list-header">
+          <h2>لیست مشتری‌ها</h2>
+          <button class="btn btn-secondary" onclick="loadCustomers()">بارگذاری دوباره</button>
+        </div>
+        <div id="customers" class="customer-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>
