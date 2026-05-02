@@ -19,7 +19,7 @@ export async function onRequestPost({ request, env }) {
 
     await env.DB.prepare(`
       UPDATE customers
-      SET 
+      SET
         name = ?,
         total_gb = ?,
         used_gb = ?,
