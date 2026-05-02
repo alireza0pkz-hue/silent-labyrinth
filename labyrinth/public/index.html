@@ -7,11 +7,52 @@
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-  <main class="site-wrap">
-    <section id="customerStatusBox"></section>
-    <div class="made-by">Made by Alireza</div>
+
+  <main class="container">
+
+    <section class="card customer-card">
+      <h1>وضعیت سرویس</h1>
+      <p class="muted">اطلاعات مصرف و وضعیت اشتراک شما</p>
+    </section>
+
+    <section class="card customer-card">
+      <h2 id="customerName">در حال دریافت اطلاعات...</h2>
+
+      <div class="status-grid">
+        <div class="status-item">
+          <span class="label">حجم کل</span>
+          <strong id="totalBox">-</strong>
+        </div>
+
+        <div class="status-item">
+          <span class="label">مصرف‌شده</span>
+          <strong id="usedBox">-</strong>
+        </div>
+
+        <div class="status-item">
+          <span class="label">باقی‌مانده</span>
+          <strong id="remainBox">-</strong>
+        </div>
+
+        <div class="status-item">
+          <span class="label">تاریخ انقضا</span>
+          <strong id="expireBox">-</strong>
+        </div>
+
+        <div class="status-item">
+          <span class="label">وضعیت</span>
+          <strong id="statusBox">-</strong>
+        </div>
+      </div>
+
+      <div class="note-box">
+        <span class="label">یادداشت</span>
+        <p id="noteBox">-</p>
+      </div>
+    </section>
+
   </main>
 
-  <script src="/app.js"></script>
+  <script src="/app.js" defer></script>
 </body>
 </html>
