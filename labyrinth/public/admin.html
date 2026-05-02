@@ -7,40 +7,39 @@
   <link rel="stylesheet" href="/style.css" />
 </head>
 <body>
-  <main class="site-wrap admin-page">
-    <section class="panel">
-      <div class="panel-head">
-        <div>
-          <h1>پنل مدیریت مشتریان</h1>
-          <p>ثبت، ویرایش و حذف مشتری‌ها</p>
-        </div>
-        <a href="/" class="link-btn">صفحه مشتری</a>
-      </div>
 
-      <div class="card">
-        <h2>ثبت / ویرایش مشتری</h2>
+  <main class="container">
 
-        <form id="customerForm" class="form-grid">
-          <input type="hidden" id="editingToken" />
+    <section class="card">
+      <h1>پنل مدیریت مشتریان</h1>
+      <p class="muted">ثبت، ویرایش و حذف اطلاعات مشتریان</p>
+    </section>
 
+    <section class="card">
+      <h2>ثبت / ویرایش مشتری</h2>
+
+      <form id="customerForm">
+        <input type="hidden" id="editingToken" />
+
+        <div class="form-grid">
           <div class="field">
             <label for="name">نام مشتری</label>
             <input id="name" type="text" placeholder="مثلاً علی رضایی" required />
           </div>
 
           <div class="field">
-            <label for="total_mb">حجم کل (MB)</label>
+            <label for="total_mb">حجم کل بر حسب MB</label>
             <input id="total_mb" type="number" min="0" placeholder="مثلاً 51200" required />
           </div>
 
           <div class="field">
-            <label for="used_mb">حجم مصرف‌شده (MB)</label>
-            <input id="used_mb" type="number" min="0" placeholder="مثلاً 10240" required />
+            <label for="used_mb">حجم مصرف‌شده بر حسب MB</label>
+            <input id="used_mb" type="number" min="0" placeholder="مثلاً 10240" value="0" />
           </div>
 
           <div class="field">
             <label for="expire_date">تاریخ انقضا</label>
-            <input id="expire_date" type="text" placeholder="مثلاً 1405/03/20" />
+            <input id="expire_date" type="text" placeholder="مثلاً 1405/03/01" />
           </div>
 
           <div class="field">
@@ -53,47 +52,46 @@
 
           <div class="field full">
             <label for="note">یادداشت</label>
-            <textarea id="note" rows="4" placeholder="توضیحات اختیاری"></textarea>
+            <textarea id="note" rows="3" placeholder="یادداشت اختیاری"></textarea>
           </div>
-
-          <div class="actions full">
-            <button id="submitBtn" type="submit" class="btn primary">ثبت مشتری</button>
-            <button id="cancelEditBtn" type="button" class="btn ghost hidden">لغو ویرایش</button>
-          </div>
-        </form>
-      </div>
-
-      <div class="card">
-        <h2>لیست مشتریان</h2>
-
-        <div class="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th>نام</th>
-                <th>حجم کل</th>
-                <th>مصرف‌شده</th>
-                <th>باقی‌مانده</th>
-                <th>انقضا</th>
-                <th>وضعیت</th>
-                <th>لینک</th>
-                <th>ویرایش</th>
-                <th>حذف</th>
-              </tr>
-            </thead>
-            <tbody id="customersTableBody">
-              <tr>
-                <td colspan="9">در حال دریافت اطلاعات...</td>
-              </tr>
-            </tbody>
-          </table>
         </div>
-      </div>
 
-      <div class="made-by">Made by Alireza</div>
+        <div class="actions">
+          <button type="submit" id="submitBtn">ثبت مشتری</button>
+          <button type="button" id="cancelEditBtn" class="hidden">لغو ویرایش</button>
+        </div>
+      </form>
     </section>
+
+    <section class="card">
+      <h2>لیست مشتریان</h2>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>نام</th>
+              <th>حجم کل</th>
+              <th>مصرف‌شده</th>
+              <th>باقی‌مانده</th>
+              <th>انقضا</th>
+              <th>وضعیت</th>
+              <th>لینک</th>
+              <th>عملیات</th>
+            </tr>
+          </thead>
+
+          <tbody id="customersTableBody">
+            <tr>
+              <td colspan="8">در حال دریافت اطلاعات...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
   </main>
 
-  <script src="/app.js"></script>
+  <script src="/app.js" defer></script>
 </body>
 </html>
