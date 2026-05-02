@@ -1,25 +1,34 @@
-function generateToken() {
-  return Math.random().toString(36).slice(2) + Math.random().toString(36).slice(2);
-}
+export async function onRequestPost({ request, env }) {
+  try {
+    const data = await request.json();
 
-export async function onRequestPost(context) {
-  const { request, env } = context;
-  const body = await request.json();
+    const token = String(data.token || "").trim();
+    const name = String(data.name || "").trim();
+    const total_gb = Number(data.total_gb || 0);
+    const used_gb = Number(data.used_gb || 0);
+    const expire_date = String(data.expire_date || "").trim();
+    const status = String(data.status || "active").trim();
+    const note = String(data.note || "").trim();
 
-  const token = generateToken();
+    if (!token || !name) {
+      return Response.json(
+        { success: false, error: "اطلاعات ناقص است" },
+        { status: 400 }
+      );
+    }
 
-  await env.DB.prepare(`
-    INSERT INTO customers (token, name, total_gb, used_gb, expire_date, status, note, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, datetime('now'))
-  `).bind(
-    token,
-    body.name,
-    body.total_gb,
-    body.used_gb,
-    body.expire_date || '',
-    body.status || 'active',
-    body.note || ''
-  ).run();
+    await env.DB.prepare(`
+      INSERT INTO customers (token, name, total_gb, used_gb, expire_date, status, note)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `)
+      .bind(token, name, total_gb, used_gb, expire_date, status, note)
+      .run();
 
-  return Response.json({ success: true, token });
+    return Response.json({ success: true });
+  } catch (err) {
+    return Response.json(
+      { success: false, error: err.message },
+      { status: 500 }
+    );
+  }
 }
