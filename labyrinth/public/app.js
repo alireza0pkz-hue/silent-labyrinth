@@ -28,6 +28,15 @@ async function fetchJson(url, options = {}) {
   return data;
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
 /* =========================
    ADMIN
 ========================= */
@@ -199,15 +208,14 @@ async function loadCustomerStatus() {
   const box = $("#customerStatusBox");
   if (!box) return;
 
-  const token = location.pathname.replace(/^\/+/, "").trim();
+  const path = location.pathname.replace(/^\/+/, "").trim();
 
-  if (!token || token === "index.html" || token === "admin.html") {
-    box.innerHTML = `<div class="error-box">لینک مشتری نامعتبر است.</div>`;
+  if (!path || path === "admin.html" || path === "index.html") {
     return;
   }
 
   try {
-    const data = await fetchJson(`/api/customer/${token}`);
+    const data = await fetchJson(`/api/customer/${path}`);
     const c = data.customer;
 
     const totalMb = gbToMb(c.total_gb);
@@ -261,18 +269,10 @@ async function loadCustomerStatus() {
   }
 }
 
-function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#039;");
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   const form = $("#customerForm");
   const cancelBtn = $("#cancelEditBtn");
+  const customerBox = $("#customerStatusBox");
 
   if (form) {
     form.addEventListener("submit", handleCustomerSubmit);
@@ -283,5 +283,7 @@ document.addEventListener("DOMContentLoaded", () => {
     cancelBtn.addEventListener("click", resetForm);
   }
 
-  loadCustomerStatus();
+  if (customerBox) {
+    loadCustomerStatus();
+  }
 });
