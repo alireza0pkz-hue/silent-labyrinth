@@ -4,55 +4,698 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>وضعیت سرویس مشتری</title>
-  <link rel="stylesheet" href="/style.css" />
+
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700;800;900&display=swap');
+
+    :root {
+      --bg1: #020617;
+      --bg2: #071427;
+      --card: rgba(15, 23, 42, 0.72);
+      --border: rgba(148, 163, 184, 0.18);
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --primary: #38bdf8;
+      --primary2: #818cf8;
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+    }
+
+    * {
+      box-sizing: border-box;
+      font-family: "Vazirmatn", sans-serif;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 15% 10%, rgba(56, 189, 248, 0.25), transparent 28%),
+        radial-gradient(circle at 85% 15%, rgba(129, 140, 248, 0.25), transparent 30%),
+        radial-gradient(circle at 50% 95%, rgba(34, 197, 94, 0.13), transparent 28%),
+        linear-gradient(135deg, var(--bg1), var(--bg2));
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-image:
+        linear-gradient(rgba(255,255,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,0.035) 1px, transparent 1px);
+      background-size: 42px 42px;
+      mask-image: linear-gradient(to bottom, black, transparent 85%);
+      pointer-events: none;
+    }
+
+    .orb {
+      position: fixed;
+      width: 340px;
+      height: 340px;
+      border-radius: 999px;
+      filter: blur(70px);
+      opacity: 0.28;
+      pointer-events: none;
+      animation: float 8s ease-in-out infinite alternate;
+    }
+
+    .orb.one {
+      background: #38bdf8;
+      top: -120px;
+      right: -120px;
+    }
+
+    .orb.two {
+      background: #818cf8;
+      bottom: -130px;
+      left: -100px;
+      animation-delay: 1.5s;
+    }
+
+    @keyframes float {
+      from { transform: translateY(0) scale(1); }
+      to { transform: translateY(35px) scale(1.08); }
+    }
+
+    .page {
+      width: min(1120px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 34px 0 42px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo {
+      width: 54px;
+      height: 54px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, rgba(56,189,248,0.95), rgba(129,140,248,0.95));
+      display: grid;
+      place-items: center;
+      box-shadow: 0 18px 45px rgba(56,189,248,0.25);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .logo::after {
+      content: "";
+      position: absolute;
+      width: 90px;
+      height: 22px;
+      background: rgba(255,255,255,0.32);
+      transform: rotate(-35deg);
+      top: 4px;
+      left: -36px;
+    }
+
+    .logo span {
+      font-weight: 900;
+      font-size: 24px;
+      color: white;
+      z-index: 1;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 900;
+      letter-spacing: -0.5px;
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .badge {
+      border: 1px solid var(--border);
+      background: rgba(15,23,42,0.65);
+      backdrop-filter: blur(16px);
+      color: #cbd5e1;
+      padding: 10px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      white-space: nowrap;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 22px;
+      align-items: stretch;
+    }
+
+    .card {
+      border: 1px solid var(--border);
+      background: linear-gradient(180deg, rgba(15,23,42,0.82), rgba(15,23,42,0.58));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(22px);
+      border-radius: 30px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .card::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(135deg, rgba(255,255,255,0.09), transparent 38%);
+      pointer-events: none;
+    }
+
+    .main-card {
+      padding: 34px;
+      min-height: 390px;
+    }
+
+    .customer-label {
+      color: var(--muted);
+      font-size: 14px;
+      margin-bottom: 10px;
+    }
+
+    .customer-name {
+      margin: 0;
+      font-size: clamp(30px, 5vw, 54px);
+      line-height: 1.25;
+      font-weight: 900;
+      letter-spacing: -1.5px;
+    }
+
+    .status-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 18px;
+      padding: 9px 14px;
+      border-radius: 999px;
+      background: rgba(34,197,94,0.12);
+      border: 1px solid rgba(34,197,94,0.25);
+      color: #86efac;
+      font-weight: 700;
+      font-size: 13px;
+    }
+
+    .dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 999px;
+      background: currentColor;
+      box-shadow: 0 0 18px currentColor;
+    }
+
+    .summary {
+      margin-top: 30px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+
+    .mini {
+      background: rgba(15,23,42,0.56);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      padding: 18px;
+    }
+
+    .mini span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .mini strong {
+      display: block;
+      margin-top: 7px;
+      font-size: 21px;
+      font-weight: 900;
+    }
+
+    .progress-card {
+      padding: 30px;
+      display: grid;
+      place-items: center;
+      text-align: center;
+    }
+
+    .ring-wrap {
+      width: 260px;
+      height: 260px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: conic-gradient(var(--success) calc(var(--percent) * 1%), rgba(51,65,85,0.65) 0);
+      box-shadow: inset 0 0 30px rgba(255,255,255,0.04), 0 24px 70px rgba(34,197,94,0.17);
+      position: relative;
+    }
+
+    .ring-wrap::before {
+      content: "";
+      position: absolute;
+      inset: 15px;
+      background: linear-gradient(180deg, #0f172a, #020617);
+      border-radius: 50%;
+      border: 1px solid rgba(148,163,184,0.16);
+    }
+
+    .ring-inner {
+      position: relative;
+      z-index: 1;
+    }
+
+    .percent {
+      font-size: 54px;
+      font-weight: 900;
+      letter-spacing: -1px;
+      line-height: 1;
+    }
+
+    .percent small {
+      font-size: 22px;
+      color: var(--muted);
+    }
+
+    .percent-label {
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .progress-title {
+      margin-top: 22px;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .progress-desc {
+      margin-top: 7px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .details {
+      margin-top: 22px;
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+    }
+
+    .detail {
+      padding: 20px;
+      border-radius: 24px;
+      background: rgba(15,23,42,0.58);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(18px);
+    }
+
+    .detail .icon {
+      width: 42px;
+      height: 42px;
+      border-radius: 15px;
+      display: grid;
+      place-items: center;
+      margin-bottom: 14px;
+      background: rgba(56,189,248,0.12);
+      border: 1px solid rgba(56,189,248,0.18);
+      font-size: 20px;
+    }
+
+    .detail span {
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .detail strong {
+      display: block;
+      margin-top: 8px;
+      font-size: 19px;
+      font-weight: 900;
+      word-break: break-word;
+    }
+
+    .note-card {
+      margin-top: 22px;
+      padding: 24px;
+    }
+
+    .note-title {
+      margin: 0 0 10px;
+      font-size: 18px;
+      font-weight: 900;
+    }
+
+    .note-text {
+      margin: 0;
+      color: #cbd5e1;
+      line-height: 2;
+      font-size: 15px;
+    }
+
+    .loading {
+      min-height: 70vh;
+      display: grid;
+      place-items: center;
+      text-align: center;
+    }
+
+    .loader {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      border: 5px solid rgba(148,163,184,0.18);
+      border-top-color: var(--primary);
+      animation: spin 0.9s linear infinite;
+      margin: 0 auto 18px;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .error-box {
+      width: min(560px, calc(100% - 32px));
+      margin: 80px auto;
+      padding: 28px;
+      border-radius: 26px;
+      background: rgba(127, 29, 29, 0.25);
+      border: 1px solid rgba(248, 113, 113, 0.35);
+      color: #fecaca;
+      text-align: center;
+      backdrop-filter: blur(18px);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 900px) {
+      .hero {
+        grid-template-columns: 1fr;
+      }
+
+      .details {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .summary {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 560px) {
+      .page {
+        width: min(100% - 20px, 1120px);
+        padding-top: 18px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .badge {
+        width: 100%;
+        text-align: center;
+      }
+
+      .main-card,
+      .progress-card {
+        padding: 22px;
+        border-radius: 24px;
+      }
+
+      .details {
+        grid-template-columns: 1fr;
+      }
+
+      .ring-wrap {
+        width: 220px;
+        height: 220px;
+      }
+
+      .percent {
+        font-size: 46px;
+      }
+    }
+  </style>
 </head>
+
 <body>
+  <div class="orb one"></div>
+  <div class="orb two"></div>
 
-  <main class="container">
+  <section id="loading" class="loading">
+    <div>
+      <div class="loader"></div>
+      <div>در حال دریافت اطلاعات سرویس...</div>
+    </div>
+  </section>
 
-    <section class="card customer-card">
-      <h1>وضعیت سرویس</h1>
-      <p class="muted">اطلاعات مصرف و وضعیت اشتراک شما</p>
-    </section>
+  <section id="errorBox" class="error-box hidden">
+    <h2>خطا در دریافت اطلاعات</h2>
+    <p id="errorText">لینک معتبر نیست یا اطلاعاتی پیدا نشد.</p>
+  </section>
 
-    <section class="card customer-card">
-      <h2 id="customerName">در حال دریافت اطلاعات...</h2>
-
-      <div class="status-grid">
-        <div class="status-item">
-          <span class="label">حجم کل</span>
-          <strong id="totalBox">-</strong>
+  <main id="app" class="page hidden">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">
+          <span>L</span>
         </div>
 
-        <div class="status-item">
-          <span class="label">مصرف‌شده</span>
-          <strong id="usedBox">-</strong>
-        </div>
-
-        <div class="status-item">
-          <span class="label">باقی‌مانده</span>
-          <strong id="remainBox">-</strong>
-        </div>
-
-        <div class="status-item">
-          <span class="label">تاریخ انقضا</span>
-          <strong id="expireBox">-</strong>
-        </div>
-
-        <div class="status-item">
-          <span class="label">وضعیت</span>
-          <strong id="statusBox">-</strong>
+        <div>
+          <h1 id="projectName">Labyrinth Panel</h1>
+          <p>داشبورد هوشمند وضعیت سرویس مشتری</p>
         </div>
       </div>
 
-      <div class="note-box">
-        <span class="label">یادداشت</span>
-        <p id="noteBox">-</p>
+      <div class="badge">
+        آخرین بروزرسانی: <span id="updatedAt">-</span>
+      </div>
+    </header>
+
+    <section class="hero">
+      <div class="card main-card">
+        <div class="customer-label">مشترک عزیز</div>
+        <h2 id="customerName" class="customer-name">-</h2>
+
+        <div id="statusPill" class="status-pill">
+          <span class="dot"></span>
+          <span id="statusText">-</span>
+        </div>
+
+        <div class="summary">
+          <div class="mini">
+            <span>حجم کل</span>
+            <strong id="totalBox">-</strong>
+          </div>
+
+          <div class="mini">
+            <span>مصرف‌شده</span>
+            <strong id="usedBox">-</strong>
+          </div>
+
+          <div class="mini">
+            <span>باقی‌مانده</span>
+            <strong id="remainBox">-</strong>
+          </div>
+        </div>
+      </div>
+
+      <div class="card progress-card">
+        <div id="ring" class="ring-wrap" style="--percent: 0;">
+          <div class="ring-inner">
+            <div class="percent">
+              <span id="remainPercent">0</span><small>%</small>
+            </div>
+            <div class="percent-label">حجم باقی‌مانده</div>
+          </div>
+        </div>
+
+        <div class="progress-title" id="progressTitle">-</div>
+        <div class="progress-desc" id="progressDesc">-</div>
       </div>
     </section>
 
+    <section class="details">
+      <div class="detail">
+        <div class="icon">📦</div>
+        <span>کل حجم سرویس</span>
+        <strong id="totalDetail">-</strong>
+      </div>
+
+      <div class="detail">
+        <div class="icon">🔥</div>
+        <span>میزان مصرف‌شده</span>
+        <strong id="usedDetail">-</strong>
+      </div>
+
+      <div class="detail">
+        <div class="icon">💎</div>
+        <span>حجم باقی‌مانده</span>
+        <strong id="remainDetail">-</strong>
+      </div>
+
+      <div class="detail">
+        <div class="icon">⏳</div>
+        <span>تاریخ انقضا</span>
+        <strong id="expireBox">-</strong>
+      </div>
+    </section>
+
+    <section class="card note-card">
+      <h3 class="note-title">یادداشت سرویس</h3>
+      <p id="noteBox" class="note-text">-</p>
+    </section>
   </main>
 
-  <script src="/app.js" defer></script>
+  <script>
+    const PROJECT_NAME = "Labyrinth Panel";
+
+    const $ = (id) => document.getElementById(id);
+
+    function toFaNumber(value) {
+      return new Intl.NumberFormat("fa-IR").format(value);
+    }
+
+    function formatMB(mb) {
+      mb = Number(mb || 0);
+
+      if (mb >= 1024 * 1024) {
+        return `${toFaNumber((mb / 1024 / 1024).toFixed(2))} TB`;
+      }
+
+      if (mb >= 1024) {
+        return `${toFaNumber((mb / 1024).toFixed(2))} GB`;
+      }
+
+      return `${toFaNumber(mb)} MB`;
+    }
+
+    function normalizeCustomer(data) {
+      return data.customer || data.data || data;
+    }
+
+    function setStatus(status) {
+      const pill = $("statusPill");
+      const text = $("statusText");
+      const normalized = String(status || "active").toLowerCase();
+
+      if (normalized === "active" || normalized === "فعال") {
+        text.textContent = "سرویس فعال";
+        pill.style.background = "rgba(34,197,94,0.12)";
+        pill.style.borderColor = "rgba(34,197,94,0.25)";
+        pill.style.color = "#86efac";
+      } else {
+        text.textContent = "سرویس غیرفعال";
+        pill.style.background = "rgba(239,68,68,0.12)";
+        pill.style.borderColor = "rgba(239,68,68,0.28)";
+        pill.style.color = "#fca5a5";
+      }
+    }
+
+    function setProgress(percent) {
+      const ring = $("ring");
+      const safePercent = Math.max(0, Math.min(100, Math.round(percent)));
+
+      $("remainPercent").textContent = toFaNumber(safePercent);
+      ring.style.setProperty("--percent", safePercent);
+
+      if (safePercent >= 60) {
+        ring.style.background = `conic-gradient(#22c55e ${safePercent}%, rgba(51,65,85,0.65) 0)`;
+        $("progressTitle").textContent = "وضعیت عالیه";
+        $("progressDesc").textContent = "هنوز حجم مناسبی از سرویس شما باقی مانده است.";
+      } else if (safePercent >= 25) {
+        ring.style.background = `conic-gradient(#f59e0b ${safePercent}%, rgba(51,65,85,0.65) 0)`;
+        $("progressTitle").textContent = "مصرف متوسط";
+        $("progressDesc").textContent = "بهتره مصرف سرویس رو زیر نظر داشته باشید.";
+      } else {
+        ring.style.background = `conic-gradient(#ef4444 ${safePercent}%, rgba(51,65,85,0.65) 0)`;
+        $("progressTitle").textContent = "حجم رو به اتمامه";
+        $("progressDesc").textContent = "حجم باقی‌مانده کم است و بهتره تمدید یا شارژ شود.";
+      }
+    }
+
+    async function loadCustomer() {
+      try {
+        $("projectName").textContent = PROJECT_NAME;
+
+        const token = decodeURIComponent(location.pathname.replace(/^\/+|\/+$/g, ""));
+
+        if (!token || token === "index.html") {
+          throw new Error("توکن مشتری در لینک وجود ندارد.");
+        }
+
+        const res = await fetch(`/api/customer/${encodeURIComponent(token)}`, {
+          method: "GET",
+          headers: {
+            "Accept": "application/json"
+          }
+        });
+
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          throw new Error(data.error || data.message || "اطلاعات مشتری پیدا نشد.");
+        }
+
+        const customer = normalizeCustomer(data);
+
+        const name = customer.name || customer.customer_name || "مشتری";
+        const total = Number(customer.total_mb || customer.total || 0);
+        const used = Number(customer.used_mb || customer.used || 0);
+        const remain = Math.max(total - used, 0);
+        const percentRemain = total > 0 ? (remain / total) * 100 : 0;
+
+        $("customerName").textContent = name;
+
+        $("totalBox").textContent = formatMB(total);
+        $("usedBox").textContent = formatMB(used);
+        $("remainBox").textContent = formatMB(remain);
+
+        $("totalDetail").textContent = formatMB(total);
+        $("usedDetail").textContent = formatMB(used);
+        $("remainDetail").textContent = formatMB(remain);
+
+        $("expireBox").textContent =
+          customer.expire_date || customer.expire || customer.expireDate || "-";
+
+        $("noteBox").textContent =
+          customer.note || customer.description || "یادداشتی ثبت نشده است.";
+
+        setStatus(customer.status);
+        setProgress(percentRemain);
+
+        $("updatedAt").textContent = new Date().toLocaleString("fa-IR");
+
+        $("loading").classList.add("hidden");
+        $("app").classList.remove("hidden");
+      } catch (err) {
+        $("loading").classList.add("hidden");
+        $("errorBox").classList.remove("hidden");
+        $("errorText").textContent = err.message || "خطای ناشناخته در دریافت اطلاعات.";
+      }
+    }
+
+    loadCustomer();
+  </script>
 </body>
 </html>
