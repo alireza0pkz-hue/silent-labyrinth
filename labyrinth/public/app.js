@@ -270,17 +270,12 @@ async function loadCustomerStatus() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const form = $("#customerForm");
-  const cancelBtn = $("#cancelEditBtn");
-  const customerBox = $("#customerStatusBox");
+  const form = document.querySelector("#customerForm");
+  const customerBox = document.querySelector("#customerStatusBox");
 
   if (form) {
     form.addEventListener("submit", handleCustomerSubmit);
     loadCustomers();
-  }
-
-  if (cancelBtn) {
-    cancelBtn.addEventListener("click", resetForm);
   }
 
   if (customerBox) {
