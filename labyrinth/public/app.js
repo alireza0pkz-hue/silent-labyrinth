@@ -1,116 +1,283 @@
-async function loadCustomers() {
-  const box = document.getElementById('customers');
-  if (!box) return;
+const $ = (selector) => document.querySelector(selector);
 
-  box.innerHTML = `<div class="empty-box">در حال دریافت اطلاعات...</div>`;
+function gbToMb(gb) {
+  return Math.round(Number(gb || 0) * 1024);
+}
 
-  const res = await fetch('/api/admin/customers');
-  const data = await res.json();
+function mbToGb(mb) {
+  return Number((Number(mb || 0) / 1024).toFixed(4));
+}
 
-  if (!data.length) {
-    box.innerHTML = `<div class="empty-box">هنوز هیچ مشتری‌ای ثبت نشده است.</div>`;
+function makeToken(length = 18) {
+  const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let token = "";
+  for (let i = 0; i < length; i++) {
+    token += chars[Math.floor(Math.random() * chars.length)];
+  }
+  return token;
+}
+
+async function fetchJson(url, options = {}) {
+  const res = await fetch(url, options);
+  const data = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    throw new Error(data.error || "خطا در ارتباط با سرور");
+  }
+
+  return data;
+}
+
+/* =========================
+   صفحه ادمین
+========================= */
+
+async function loadAdminCustomers() {
+  const tableBody = $("#customersTableBody");
+  if (!tableBody) return;
+
+  tableBody.innerHTML = `
+    <tr>
+      <td colspan="9">در حال دریافت اطلاعات...</td>
+    </tr>
+  `;
+
+  try {
+    const data = await fetchJson("/api/admin/customers");
+    const customers = data.customers || [];
+
+    if (!customers.length) {
+      tableBody.innerHTML = `
+        <tr>
+          <td colspan="9">هنوز مشتری ثبت نشده است.</td>
+        </tr>
+      `;
+      return;
+    }
+
+    tableBody.innerHTML = customers.map((c) => {
+      const totalMb = gbToMb(c.total_gb);
+      const usedMb = gbToMb(c.used_gb);
+      const remainMb = Math.max(totalMb - usedMb, 0);
+
+      return `
+        <tr>
+          <td>${c.name || "-"}</td>
+          <td>${totalMb} MB</td>
+          <td>${usedMb} MB</td>
+          <td>${remainMb} MB</td>
+          <td>${c.expire_date || "-"}</td>
+          <td>
+            <span class="status-badge ${c.status === "active" ? "active" : "inactive"}">
+              ${c.status === "active" ? "فعال" : "غیرفعال"}
+            </span>
+          </td>
+          <td>
+            <a class="customer-link" href="/u/${c.token}" target="_blank">باز کردن</a>
+          </td>
+          <td>
+            <button class="edit-btn" onclick='editCustomer(${JSON.stringify(c)})'>ویرایش</button>
+          </td>
+          <td>
+            <button class="delete-btn" onclick="deleteCustomer('${c.token}')">حذف</button>
+          </td>
+        </tr>
+      `;
+    }).join("");
+  } catch (err) {
+    tableBody.innerHTML = `
+      <tr>
+        <td colspan="9">خطا: ${err.message}</td>
+      </tr>
+    `;
+  }
+}
+
+function editCustomer(c) {
+  $("#editingToken").value = c.token;
+  $("#name").value = c.name || "";
+  $("#total_mb").value = gbToMb(c.total_gb);
+  $("#used_mb").value = gbToMb(c.used_gb);
+  $("#expire_date").value = c.expire_date || "";
+  $("#status").value = c.status || "active";
+  $("#note").value = c.note || "";
+
+  $("#submitBtn").textContent = "ذخیره ویرایش";
+  $("#cancelEditBtn").style.display = "inline-flex";
+
+  window.scrollTo({
+    top: 0,
+    behavior: "smooth"
+  });
+}
+
+function cancelEdit() {
+  $("#customerForm").reset();
+  $("#editingToken").value = "";
+  $("#submitBtn").textContent = "ثبت مشتری";
+  $("#cancelEditBtn").style.display = "none";
+}
+
+async function submitCustomer(e) {
+  e.preventDefault();
+
+  const editingToken = $("#editingToken").value.trim();
+
+  const payload = {
+    token: editingToken || makeToken(),
+    name: $("#name").value.trim(),
+    total_gb: mbToGb($("#total_mb").value),
+    used_gb: mbToGb($("#used_mb").value),
+    expire_date: $("#expire_date").value,
+    status: $("#status").value,
+    note: $("#note").value.trim()
+  };
+
+  if (!payload.name) {
+    alert("نام مشتری را وارد کن.");
     return;
   }
 
-  box.innerHTML = '';
+  try {
+    if (editingToken) {
+      await fetchJson("/api/admin/customer-update", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
 
-  data.forEach(c => {
-    const remain = Math.max(0, Number(c.total_gb) - Number(c.used_gb));
-    const percent = Number(c.total_gb) > 0
-      ? Math.min(100, (Number(c.used_gb) / Number(c.total_gb)) * 100)
-      : 0;
+      alert("اطلاعات مشتری ویرایش شد.");
+    } else {
+      await fetchJson("/api/admin/customer-create", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(payload)
+      });
 
-    const statusText = c.status === 'active' ? 'فعال' : 'غیرفعال';
-    const statusClass = c.status === 'active' ? 'badge-active' : 'badge-inactive';
-    const customerLink = `${window.location.origin}/api/customer/${c.token}`;
+      alert("مشتری جدید ثبت شد.");
+    }
 
-    const div = document.createElement('div');
-    div.className = 'customer-card';
-    div.innerHTML = `
-      <div class="customer-top">
-        <div>
-          <div class="customer-name">${c.name}</div>
-          <div class="muted">توکن: ${c.token}</div>
-        </div>
-        <div class="badge ${statusClass}">${statusText}</div>
-      </div>
-
-      <div class="stats">
-        <div class="stat-box">
-          <div class="stat-label">حجم کل</div>
-          <div class="stat-value">${c.total_gb} GB</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">مصرف‌شده</div>
-          <div class="stat-value">${c.used_gb} GB</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-label">باقی‌مانده</div>
-          <div class="stat-value">${remain} GB</div>
-        </div>
-      </div>
-
-      <div class="progress-wrap">
-        <div class="progress-head">
-          <span>میزان مصرف</span>
-          <span>${percent.toFixed(1)}%</span>
-        </div>
-        <div class="progress">
-          <div class="progress-bar" style="width:${percent}%"></div>
-        </div>
-      </div>
-
-      <p class="muted" style="margin-top:12px;">تاریخ انقضا: ${c.expire_date || '-'}</p>
-      <p class="muted">یادداشت: ${c.note || '-'}</p>
-
-      <div class="link-box">${customerLink}</div>
-
-      <div class="action-row">
-        <a class="btn btn-secondary" href="${customerLink}" target="_blank">باز کردن صفحه مشتری</a>
-        <button class="btn btn-danger" onclick="deleteCustomer(${c.id})">حذف مشتری</button>
-      </div>
-    `;
-    box.appendChild(div);
-  });
+    cancelEdit();
+    loadAdminCustomers();
+  } catch (err) {
+    alert("خطا: " + err.message);
+  }
 }
 
-async function deleteCustomer(id) {
-  const ok = confirm('این مشتری حذف شود؟');
-  if (!ok) return;
+async function deleteCustomer(token) {
+  if (!confirm("این مشتری حذف شود؟")) return;
 
-  await fetch('/api/admin/customer-delete', {
-    method: 'POST',
-    headers: {'Content-Type': 'application/json'},
-    body: JSON.stringify({ id })
-  });
-
-  loadCustomers();
-}
-
-const form = document.getElementById('createForm');
-
-if (form) {
-  form.addEventListener('submit', async (e) => {
-    e.preventDefault();
-
-    const payload = {
-      name: document.getElementById('name').value,
-      total_gb: parseFloat(document.getElementById('total_gb').value),
-      used_gb: parseFloat(document.getElementById('used_gb').value),
-      expire_date: document.getElementById('expire_date').value,
-      status: document.getElementById('status').value,
-      note: document.getElementById('note').value
-    };
-
-    await fetch('/api/admin/customer-create', {
-      method: 'POST',
-      headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify(payload)
+  try {
+    await fetchJson("/api/admin/customer-delete", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ token })
     });
 
-    form.reset();
-    loadCustomers();
-  });
-
-  loadCustomers();
+    loadAdminCustomers();
+  } catch (err) {
+    alert("خطا: " + err.message);
+  }
 }
+
+/* =========================
+   صفحه مشتری
+========================= */
+
+async function loadCustomerPage() {
+  const box = $("#customerStatusBox");
+  if (!box) return;
+
+  const token = location.pathname.split("/").filter(Boolean).pop();
+
+  if (!token) {
+    box.innerHTML = `<div class="error-box">لینک نامعتبر است.</div>`;
+    return;
+  }
+
+  try {
+    const data = await fetchJson(`/api/customer/${token}`);
+    const c = data.customer;
+
+    const totalMb = gbToMb(c.total_gb);
+    const usedMb = gbToMb(c.used_gb);
+    const remainMb = Math.max(totalMb - usedMb, 0);
+
+    const percent = totalMb > 0 ? Math.min(Math.round((usedMb / totalMb) * 100), 100) : 0;
+
+    box.innerHTML = `
+      <div class="client-card">
+        <div class="client-header">
+          <h1>${c.name || "کاربر"}</h1>
+          <span class="status-badge ${c.status === "active" ? "active" : "inactive"}">
+            ${c.status === "active" ? "فعال" : "غیرفعال"}
+          </span>
+        </div>
+
+        <div class="usage-circle">
+          <div class="circle-inner">
+            <strong>${remainMb}</strong>
+            <span>MB باقی‌مانده</span>
+          </div>
+        </div>
+
+        <div class="progress-box">
+          <div class="progress-info">
+            <span>مصرف‌شده</span>
+            <strong>${percent}%</strong>
+          </div>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width:${percent}%"></div>
+          </div>
+        </div>
+
+        <div class="stats-grid">
+          <div>
+            <span>حجم کل</span>
+            <strong>${totalMb} MB</strong>
+          </div>
+          <div>
+            <span>مصرف‌شده</span>
+            <strong>${usedMb} MB</strong>
+          </div>
+          <div>
+            <span>باقی‌مانده</span>
+            <strong>${remainMb} MB</strong>
+          </div>
+          <div>
+            <span>تاریخ انقضا</span>
+            <strong>${c.expire_date || "-"}</strong>
+          </div>
+        </div>
+
+        ${c.note ? `<div class="note-box">${c.note}</div>` : ""}
+
+        <div class="made-by">Made by Alirez∆</div>
+      </div>
+    `;
+  } catch (err) {
+    box.innerHTML = `<div class="error-box">اطلاعاتی برای این لینک پیدا نشد.</div>`;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  const form = $("#customerForm");
+
+  if (form) {
+    form.addEventListener("submit", submitCustomer);
+    loadAdminCustomers();
+  }
+
+  const cancelBtn = $("#cancelEditBtn");
+  if (cancelBtn) {
+    cancelBtn.addEventListener("click", cancelEdit);
+  }
+
+  loadCustomerPage();
+});
