@@ -1,20 +1,20 @@
-const $ = (selector) => document.querySelector(selector);
+const $ = (s) => document.querySelector(s);
+
+function mbToGb(mb) {
+  return Number(mb || 0) / 1024;
+}
 
 function gbToMb(gb) {
   return Math.round(Number(gb || 0) * 1024);
 }
 
-function mbToGb(mb) {
-  return Number((Number(mb || 0) / 1024).toFixed(4));
-}
-
-function makeToken(length = 18) {
+function makeToken(length = 24) {
   const chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let token = "";
+  let result = "";
   for (let i = 0; i < length; i++) {
-    token += chars[Math.floor(Math.random() * chars.length)];
+    result += chars[Math.floor(Math.random() * chars.length)];
   }
-  return token;
+  return result;
 }
 
 async function fetchJson(url, options = {}) {
@@ -29,29 +29,49 @@ async function fetchJson(url, options = {}) {
 }
 
 /* =========================
-   صفحه ادمین
+   ADMIN
 ========================= */
 
-async function loadAdminCustomers() {
+function resetForm() {
+  const form = $("#customerForm");
+  if (form) form.reset();
+
+  const editingToken = $("#editingToken");
+  const submitBtn = $("#submitBtn");
+  const cancelEditBtn = $("#cancelEditBtn");
+
+  if (editingToken) editingToken.value = "";
+  if (submitBtn) submitBtn.textContent = "ثبت مشتری";
+  if (cancelEditBtn) cancelEditBtn.classList.add("hidden");
+}
+
+function fillFormForEdit(customer) {
+  $("#editingToken").value = customer.token || "";
+  $("#name").value = customer.name || "";
+  $("#total_mb").value = gbToMb(customer.total_gb || 0);
+  $("#used_mb").value = gbToMb(customer.used_gb || 0);
+  $("#expire_date").value = customer.expire_date || "";
+  $("#status").value = customer.status || "active";
+  $("#note").value = customer.note || "";
+
+  $("#submitBtn").textContent = "ذخیره ویرایش";
+  $("#cancelEditBtn").classList.remove("hidden");
+
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+async function loadCustomers() {
   const tableBody = $("#customersTableBody");
   if (!tableBody) return;
 
-  tableBody.innerHTML = `
-    <tr>
-      <td colspan="9">در حال دریافت اطلاعات...</td>
-    </tr>
-  `;
+  tableBody.innerHTML = `<tr><td colspan="9">در حال دریافت اطلاعات...</td></tr>`;
 
   try {
     const data = await fetchJson("/api/admin/customers");
     const customers = data.customers || [];
 
     if (!customers.length) {
-      tableBody.innerHTML = `
-        <tr>
-          <td colspan="9">هنوز مشتری ثبت نشده است.</td>
-        </tr>
-      `;
+      tableBody.innerHTML = `<tr><td colspan="9">هنوز مشتری ثبت نشده است.</td></tr>`;
       return;
     }
 
@@ -62,142 +82,127 @@ async function loadAdminCustomers() {
 
       return `
         <tr>
-          <td>${c.name || "-"}</td>
+          <td>${escapeHtml(c.name || "-")}</td>
           <td>${totalMb} MB</td>
           <td>${usedMb} MB</td>
           <td>${remainMb} MB</td>
-          <td>${c.expire_date || "-"}</td>
+          <td>${escapeHtml(c.expire_date || "-")}</td>
           <td>
             <span class="status-badge ${c.status === "active" ? "active" : "inactive"}">
               ${c.status === "active" ? "فعال" : "غیرفعال"}
             </span>
           </td>
           <td>
-            <a class="customer-link" href="/u/${c.token}" target="_blank">باز کردن</a>
+            <a class="customer-link" href="/${c.token}" target="_blank">مشاهده</a>
           </td>
           <td>
-            <button class="edit-btn" onclick='editCustomer(${JSON.stringify(c)})'>ویرایش</button>
+            <button class="btn edit" data-edit="${c.token}">ویرایش</button>
           </td>
           <td>
-            <button class="delete-btn" onclick="deleteCustomer('${c.token}')">حذف</button>
+            <button class="btn delete" data-delete="${c.token}">حذف</button>
           </td>
         </tr>
       `;
     }).join("");
+
+    tableBody.querySelectorAll("[data-edit]").forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const token = btn.getAttribute("data-edit");
+        const customer = customers.find((x) => x.token === token);
+        if (customer) fillFormForEdit(customer);
+      });
+    });
+
+    tableBody.querySelectorAll("[data-delete]").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const token = btn.getAttribute("data-delete");
+        if (!confirm("این مشتری حذف شود؟")) return;
+
+        try {
+          await fetchJson("/api/admin/customer-delete", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token })
+          });
+
+          await loadCustomers();
+        } catch (err) {
+          alert(err.message);
+        }
+      });
+    });
   } catch (err) {
-    tableBody.innerHTML = `
-      <tr>
-        <td colspan="9">خطا: ${err.message}</td>
-      </tr>
-    `;
+    tableBody.innerHTML = `<tr><td colspan="9">خطا: ${escapeHtml(err.message)}</td></tr>`;
   }
 }
 
-function editCustomer(c) {
-  $("#editingToken").value = c.token;
-  $("#name").value = c.name || "";
-  $("#total_mb").value = gbToMb(c.total_gb);
-  $("#used_mb").value = gbToMb(c.used_gb);
-  $("#expire_date").value = c.expire_date || "";
-  $("#status").value = c.status || "active";
-  $("#note").value = c.note || "";
-
-  $("#submitBtn").textContent = "ذخیره ویرایش";
-  $("#cancelEditBtn").style.display = "inline-flex";
-
-  window.scrollTo({
-    top: 0,
-    behavior: "smooth"
-  });
-}
-
-function cancelEdit() {
-  $("#customerForm").reset();
-  $("#editingToken").value = "";
-  $("#submitBtn").textContent = "ثبت مشتری";
-  $("#cancelEditBtn").style.display = "none";
-}
-
-async function submitCustomer(e) {
+async function handleCustomerSubmit(e) {
   e.preventDefault();
 
   const editingToken = $("#editingToken").value.trim();
+  const name = $("#name").value.trim();
+  const totalMb = Number($("#total_mb").value || 0);
+  const usedMb = Number($("#used_mb").value || 0);
+  const expireDate = $("#expire_date").value.trim();
+  const status = $("#status").value;
+  const note = $("#note").value.trim();
 
-  const payload = {
-    token: editingToken || makeToken(),
-    name: $("#name").value.trim(),
-    total_gb: mbToGb($("#total_mb").value),
-    used_gb: mbToGb($("#used_mb").value),
-    expire_date: $("#expire_date").value,
-    status: $("#status").value,
-    note: $("#note").value.trim()
-  };
-
-  if (!payload.name) {
+  if (!name) {
     alert("نام مشتری را وارد کن.");
     return;
   }
+
+  if (totalMb < 0 || usedMb < 0) {
+    alert("مقدار حجم نامعتبر است.");
+    return;
+  }
+
+  const payload = {
+    token: editingToken || makeToken(),
+    name,
+    total_gb: mbToGb(totalMb),
+    used_gb: mbToGb(usedMb),
+    expire_date: expireDate,
+    status,
+    note
+  };
 
   try {
     if (editingToken) {
       await fetchJson("/api/admin/customer-update", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-
-      alert("اطلاعات مشتری ویرایش شد.");
+      alert("مشتری ویرایش شد.");
     } else {
       await fetchJson("/api/admin/customer-create", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload)
       });
-
-      alert("مشتری جدید ثبت شد.");
+      alert("مشتری ثبت شد.");
     }
 
-    cancelEdit();
-    loadAdminCustomers();
+    resetForm();
+    await loadCustomers();
   } catch (err) {
-    alert("خطا: " + err.message);
-  }
-}
-
-async function deleteCustomer(token) {
-  if (!confirm("این مشتری حذف شود؟")) return;
-
-  try {
-    await fetchJson("/api/admin/customer-delete", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ token })
-    });
-
-    loadAdminCustomers();
-  } catch (err) {
-    alert("خطا: " + err.message);
+    alert(err.message);
   }
 }
 
 /* =========================
-   صفحه مشتری
+   CUSTOMER PAGE
 ========================= */
 
-async function loadCustomerPage() {
+async function loadCustomerStatus() {
   const box = $("#customerStatusBox");
   if (!box) return;
 
-  const token = location.pathname.split("/").filter(Boolean).pop();
+  const token = location.pathname.replace(/^\/+/, "").trim();
 
-  if (!token) {
-    box.innerHTML = `<div class="error-box">لینک نامعتبر است.</div>`;
+  if (!token || token === "index.html" || token === "admin.html") {
+    box.innerHTML = `<div class="error-box">لینک مشتری نامعتبر است.</div>`;
     return;
   }
 
@@ -208,76 +213,75 @@ async function loadCustomerPage() {
     const totalMb = gbToMb(c.total_gb);
     const usedMb = gbToMb(c.used_gb);
     const remainMb = Math.max(totalMb - usedMb, 0);
-
     const percent = totalMb > 0 ? Math.min(Math.round((usedMb / totalMb) * 100), 100) : 0;
 
     box.innerHTML = `
-      <div class="client-card">
-        <div class="client-header">
-          <h1>${c.name || "کاربر"}</h1>
+      <div class="customer-card">
+        <div class="customer-top">
+          <h1>${escapeHtml(c.name || "مشتری")}</h1>
           <span class="status-badge ${c.status === "active" ? "active" : "inactive"}">
             ${c.status === "active" ? "فعال" : "غیرفعال"}
           </span>
         </div>
 
-        <div class="usage-circle">
-          <div class="circle-inner">
-            <strong>${remainMb}</strong>
-            <span>MB باقی‌مانده</span>
-          </div>
+        <div class="big-remaining">
+          <strong>${remainMb} MB</strong>
+          <span>حجم باقی‌مانده</span>
         </div>
 
-        <div class="progress-box">
-          <div class="progress-info">
-            <span>مصرف‌شده</span>
-            <strong>${percent}%</strong>
-          </div>
-          <div class="progress-bar">
-            <div class="progress-fill" style="width:${percent}%"></div>
-          </div>
+        <div>میزان مصرف: ${percent}%</div>
+        <div class="progress">
+          <div class="progress-bar" style="width:${percent}%"></div>
         </div>
 
-        <div class="stats-grid">
-          <div>
+        <div class="stats">
+          <div class="stat">
             <span>حجم کل</span>
             <strong>${totalMb} MB</strong>
           </div>
-          <div>
+          <div class="stat">
             <span>مصرف‌شده</span>
             <strong>${usedMb} MB</strong>
           </div>
-          <div>
+          <div class="stat">
             <span>باقی‌مانده</span>
             <strong>${remainMb} MB</strong>
           </div>
-          <div>
+          <div class="stat">
             <span>تاریخ انقضا</span>
-            <strong>${c.expire_date || "-"}</strong>
+            <strong>${escapeHtml(c.expire_date || "-")}</strong>
           </div>
         </div>
 
-        ${c.note ? `<div class="note-box">${c.note}</div>` : ""}
-
-        <div class="made-by">Made by Alirez∆</div>
+        ${c.note ? `<div class="note-box">${escapeHtml(c.note)}</div>` : ""}
       </div>
     `;
   } catch (err) {
-    box.innerHTML = `<div class="error-box">اطلاعاتی برای این لینک پیدا نشد.</div>`;
+    box.innerHTML = `<div class="error-box">اطلاعات این مشتری پیدا نشد.</div>`;
   }
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 document.addEventListener("DOMContentLoaded", () => {
   const form = $("#customerForm");
+  const cancelBtn = $("#cancelEditBtn");
 
   if (form) {
-    form.addEventListener("submit", submitCustomer);
-    loadAdminCustomers();
+    form.addEventListener("submit", handleCustomerSubmit);
+    loadCustomers();
   }
 
-  const cancelBtn = $("#cancelEditBtn");
   if (cancelBtn) {
-    cancelBtn.addEventListener("click", cancelEdit);
+    cancelBtn.addEventListener("click", resetForm);
   }
 
-  loadCustomerPage();
+  loadCustomerStatus();
 });
